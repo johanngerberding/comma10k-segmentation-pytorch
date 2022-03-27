@@ -11,6 +11,8 @@ class RegSeg(nn.Module):
         self.decoder = decoder
         
     def forward(self, x):
+        x_1_4, x_1_8, x_1_16 = self.encoder(x)
+        x = self.decoder(x_1_4, x_1_8, x_1_16)
         return x
     
     
@@ -22,11 +24,13 @@ class Encoder(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
         )
-        self.d_blocks = nn.Sequential(
-            DBlock(32, 48, 1, 1, 2),
+        self.d_block_1_4 = DBlock(32, 48, 1, 1, 2)
+        self.d_block_1_8 = nn.Sequential(
             DBlock(48, 48, 1, 1, 2),
             DBlock(48, 48, 1, 1, 1),
             DBlock(48, 128, 1, 1, 1),
+        )
+        self.d_block_1_16 = nn.Sequential(
             DBlock(128, 128, 1, 1, 2),
             DBlock(128, 256, 1, 1, 1),
             DBlock(256, 256, 1, 2, 1),
@@ -49,17 +53,73 @@ class Encoder(nn.Module):
         pads = get_same_pads(x, filter_size, 2)
         x = F.pad(x, pads)
         x = self.conv(x)
-        print(x.size())
-        x = self.d_blocks(x)
-        return x 
+        
+        x_1_4 = self.d_block_1_4(x)
+        x_1_8 = self.d_block_1_8(x_1_4) 
+        x_1_16 = self.d_block_1_16(x_1_8)
+        
+        return x_1_4, x_1_8, x_1_16
     
     
 class Decoder(nn.Module):   
     def __init__(self):
         super(Decoder, self).__init__()
+        self.conv1_4 = nn.Sequential(
+            nn.Conv2d(48, 8, 1),
+            nn.BatchNorm2d(8),
+            nn.ReLU(),
+        )
+        self.conv1_8 = nn.Sequential(
+            nn.Conv2d(128, 128, 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+        )
+        self.conv1_16 = nn.Sequential(
+            nn.Conv2d(320, 128, 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(128, 64, 3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+        )
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(72, 64, 3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+        )
+        self.conv5 = nn.Sequential(
+            nn.Conv2d(64, 19, 1),
+            nn.BatchNorm2d(19),
+        )
+        self.upsample_1_16 = nn.UpsamplingBilinear2d(scale_factor=2)
+        self.upsample_1_8 = nn.UpsamplingBilinear2d(scale_factor=2)
+        self.final_upsample = nn.UpsamplingBilinear2d(scale_factor=4)
         
-    def forward(self, x):
-        return x 
+        
+    def forward(self, x_1_4, x_1_8, x_1_16):
+        x_1_4 = self.conv1_4(x_1_4)
+        x_1_8 = self.conv1_8(x_1_8)
+        x_1_16 = self.conv1_16(x_1_16)
+        x_1_16 = self.upsample_1_16(x_1_16)
+        x_1_8 = x_1_8 + x_1_16
+        
+        filter_size = self.conv3[0].kernel_size[0]
+        pads = get_same_pads(x_1_8, filter_size, 1)
+        x_1_8 = F.pad(x_1_8, pads)
+        x_1_8 = self.conv3(x_1_8)
+        
+        x_1_8 = self.upsample_1_8(x_1_8)
+        x = torch.cat((x_1_4, x_1_8), dim=1)
+        
+        filter_size = self.conv4[0].kernel_size[0]
+        pads = get_same_pads(x, filter_size, 1)
+        x = F.pad(x, pads)
+        x = self.conv4(x)
+        x = self.conv5(x)
+        
+        return self.final_upsample(x)
 
 
 
@@ -188,6 +248,7 @@ class SEBlock(nn.Module):
     
     
 def main():
+    """
     ten = torch.randn(1, 32, 224, 224)
     block = DBlock(32, 64, 1, 4, 1, 0.25)
     out = block(ten)
@@ -198,13 +259,23 @@ def main():
     out = block(ten)
     print(out.size())
     
-    encoder = Encoder()
-    ten = torch.randn(1, 3, 224, 224)
-    out = encoder(ten)
-    print(out.size())
     
-    ten = torch.randn(1, 3, 512, 512)
-    out = encoder(ten)
+    ten = torch.randn(1, 3, 224, 224)
+    out1, out2, out3 = encoder(ten)
+    print(out1.size())
+    print(out2.size())
+    print(out3.size())"""
+    
+    encoder = Encoder()
+    
+    ten = torch.randn(1, 3, 864, 1168)
+    out1, out2, out3 = encoder(ten)
+    print(out1.size())
+    print(out2.size())
+    print(out3.size())
+    
+    decoder = Decoder()
+    out = decoder(out1, out2, out3)
     print(out.size())
     
     
