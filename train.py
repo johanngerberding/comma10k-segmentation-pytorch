@@ -5,29 +5,35 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 from dataset import Comma10kDataset
+
+# original img size
 # height 874
 # width 1164
 from model import RegSeg
 
 
 
-def train_epoch(model, dataloader, optimizer, loss_fn):
+def train_epoch(model, dataloader, optimizer, loss_fn, device):
     model.train()
     train_loss = 0
     for i, (img, mask) in enumerate(dataloader):
         img = img.to(device)
-        mask = mask.to(device)
+        mask = mask.to(device).long()
 
         optimizer.zero_grad()
 
         pred = model(img)
 
-        loss = loss_fn(mask, torch.argmax(pred, axis=1))
+        mask = torch.argmax(mask, axis=1)
+        loss = loss_fn(pred, mask)
         loss.backward()
 
         optimizer.step()
 
         train_loss += loss.item()
+
+        if (i + 1) % 100 == 0:
+            print(f"Iteration {i} - Train Loss: {train_loss / i}")
 
 
     train_loss /= i
@@ -35,17 +41,22 @@ def train_epoch(model, dataloader, optimizer, loss_fn):
     return train_loss
 
 
-@torch.no_grad()
-def val_epoch(model, dataloader, loss_fn):
+def val_epoch(model, dataloader, loss_fn, device):
     model.eval()
     val_loss = 0
 
     for i, (img, mask) in enumerate(dataloader):
         img = img.to(device)
-        mask = mask.to(device)
-        pred = model(img)
+        mask = mask.to(device).long()
 
-        loss = loss_fn(mask, torch.argmax(pred, axis=1))
+        with torch.no_grad():
+            pred = model(img)
+
+        loss = loss_fn(pred, torch.argmax(mask, axis=1))
+
+        val_loss += loss.item()
+
+    val_loss /= i
 
     return val_loss
 
@@ -56,15 +67,14 @@ def main():
     imgs_root = os.path.join(comma10k_dir, "imgs")
     masks_root = os.path.join(comma10k_dir, "masks")
     classes = [41, 76, 90, 124, 161]
-    num_epochs = 20
-
+    num_epochs = 5
+    batch_size = 16
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = RegSeg(num_classes=len(classes))
     model.train()
     model.to(device)
-
 
     train_transforms = A.Compose([
         A.Resize(height=14*32, width=18*32), #height, width
@@ -91,29 +101,18 @@ def main():
         transforms=train_transforms,
     )
 
-    dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     loss_fn = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-
     for epoch in range(1, num_epochs + 1):
-        train_loss = train_epoch(model, dataloader, optimizer, loss_fn)
-        val_loss = val_epoch(model, dataloader, loss_fn)
+        train_loss = train_epoch(model, dataloader, optimizer, loss_fn, device)
 
-    for img, mask in dataset:
-        print(img.size())
-        print(mask.size())
+        # val_loss = val_epoch(model, dataloader, loss_fn, device)
 
-        img = img.unsqueeze(0)
-        mask = mask.unsqueeze(0)
 
-        out_mask = model(img)
 
-        print(out_mask.size())
-        loss = loss_fn(mask, torch.argmax(out_mask, axis=1))
-        print(loss)
-        break
 
 
 if __name__ == "__main__":
