@@ -20,9 +20,10 @@ from model import RegSeg
 
 
 
-def train_epoch(model, dataloader, optimizer, loss_fn, device, writer):
+def train_epoch(model, dataloader, optimizer, loss_fn, device, writer, epoch):
     model.train()
     train_loss = 0
+    size = len(dataloader.dataset)
     for i, (img, mask) in enumerate(dataloader):
         img = img.to(device)
         mask = mask.to(device).long()
@@ -39,9 +40,10 @@ def train_epoch(model, dataloader, optimizer, loss_fn, device, writer):
 
         train_loss += loss.item()
 
-        if (i + 1) % 100 == 0:
-            print(f"Iteration {i} - Train Loss: {train_loss / i}")
-            writer.add_scalar('Loss/train', train_loss/i, i)
+        iteration = (epoch * size + (i + 1))
+        if iteration % 100 == 0:
+            print(f"Iteration {iteration} - Train Loss: {train_loss / i}")
+            writer.add_scalar('Loss/train', train_loss/i, iteration)
 
 
     train_loss /= i
@@ -49,10 +51,10 @@ def train_epoch(model, dataloader, optimizer, loss_fn, device, writer):
     return train_loss
 
 
-def val_epoch(model, dataloader, loss_fn, device, writer):
+def val_epoch(model, dataloader, loss_fn, device, writer, epoch):
     model.eval()
     val_loss = 0
-
+    size = len(dataloader.dataset)
     for i, (img, mask) in enumerate(dataloader):
         img = img.to(device)
         mask = mask.to(device).long()
@@ -63,9 +65,10 @@ def val_epoch(model, dataloader, loss_fn, device, writer):
         loss = loss_fn(pred, torch.argmax(mask, axis=1))
 
         val_loss += loss.item()
-        if (i + 1) % 100 == 0:
-            print(f"Iteration {i} - Val Loss: {val_loss / i}")
-            writer.add_scalar('Loss/val', val_loss/i, i)
+        iteration = (epoch * size + (i + 1))
+        if iteration % 100 == 0:
+            print(f"Iteration {iteration} - Val Loss: {val_loss / i}")
+            writer.add_scalar('Loss/val', val_loss/i, iteration)
 
 
     val_loss /= i
@@ -80,7 +83,7 @@ def main():
     masks_root = os.path.join(comma10k_dir, "masks")
     classes = [41, 76, 90, 124, 161]
     num_epochs = 5
-    train_batch_size = 16
+    train_batch_size = 32
     val_batch_size = 16
 
     outdir = f"exps/{date.today().strftime('%Y-%m-%d')}"
@@ -121,10 +124,10 @@ def main():
 
     writer = SummaryWriter(outdir)
 
-    for epoch in range(1, num_epochs + 1):
-        train_loss = train_epoch(model, train_dataloader, optimizer, loss_fn, device, writer)
-        val_loss = val_epoch(model, val_dataloader, loss_fn, device, writer)
-        torch.save(model.state_dict(), os.path.join(outdir, f"{str(epoch).zfill(3)}-epoch.pth"))
+    for epoch in range(num_epochs):
+        train_loss = train_epoch(model, train_dataloader, optimizer, loss_fn, device, writer, epoch)
+        val_loss = val_epoch(model, val_dataloader, loss_fn, device, writer, epoch)
+        torch.save(model.state_dict(), os.path.join(outdir, f"{str(epoch + 1).zfill(3)}-epoch.pth"))
 
     torch.save(model.state_dict(), os.path.join(outdir, "final.pth"))
 
