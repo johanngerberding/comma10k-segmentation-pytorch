@@ -1,10 +1,17 @@
 import os
 import torch
-from torch.utils.data import DataLoader
+import shutil
+from datetime import date
+from torch.utils.data import DataLoader, Subset
+from torch.utils.tensorboard import SummaryWriter
+
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from dataset import Comma10kDataset
+from dataset import (Comma10kDataset,
+                     train_test_split,
+                     get_train_transforms,
+                     get_test_transforms)
 
 # original img size
 # height 874
@@ -13,7 +20,7 @@ from model import RegSeg
 
 
 
-def train_epoch(model, dataloader, optimizer, loss_fn, device):
+def train_epoch(model, dataloader, optimizer, loss_fn, device, writer):
     model.train()
     train_loss = 0
     for i, (img, mask) in enumerate(dataloader):
@@ -34,6 +41,7 @@ def train_epoch(model, dataloader, optimizer, loss_fn, device):
 
         if (i + 1) % 100 == 0:
             print(f"Iteration {i} - Train Loss: {train_loss / i}")
+            writer.add_scalar('Loss/train', train_loss/i, i)
 
 
     train_loss /= i
@@ -41,7 +49,7 @@ def train_epoch(model, dataloader, optimizer, loss_fn, device):
     return train_loss
 
 
-def val_epoch(model, dataloader, loss_fn, device):
+def val_epoch(model, dataloader, loss_fn, device, writer):
     model.eval()
     val_loss = 0
 
@@ -55,6 +63,10 @@ def val_epoch(model, dataloader, loss_fn, device):
         loss = loss_fn(pred, torch.argmax(mask, axis=1))
 
         val_loss += loss.item()
+        if (i + 1) % 100 == 0:
+            print(f"Iteration {i} - Val Loss: {val_loss / i}")
+            writer.add_scalar('Loss/val', val_loss/i, i)
+
 
     val_loss /= i
 
@@ -68,7 +80,14 @@ def main():
     masks_root = os.path.join(comma10k_dir, "masks")
     classes = [41, 76, 90, 124, 161]
     num_epochs = 5
-    batch_size = 16
+    train_batch_size = 16
+    val_batch_size = 16
+
+    outdir = f"exps/{date.today().strftime('%Y-%m-%d')}"
+
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir, exist_ok=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -76,42 +95,38 @@ def main():
     model.train()
     model.to(device)
 
-    train_transforms = A.Compose([
-        A.Resize(height=14*32, width=18*32), #height, width
-        A.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-        ),
-        ToTensorV2(),
-    ])
+    train_imgs, val_imgs = train_test_split(imgs_root)
 
-    test_transforms = A.Compose([
-        A.Resize(height=14*32, width=18*32),
-        A.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-        ),
-        ToTensorV2(),
-    ])
-
-    dataset = Comma10kDataset(
+    train_dataset = Comma10kDataset(
         imgs_root,
         masks_root,
-        classes=[41, 76, 90, 124, 161],
-        transforms=train_transforms,
+        train_imgs,
+        classes=classes,
+        transforms=get_train_transforms(),
     )
 
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    val_dataset = Comma10kDataset(
+        imgs_root,
+        masks_root,
+        val_imgs,
+        classes=classes,
+        transforms=get_test_transforms(),
+    )
+
+    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size)
 
     loss_fn = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
+    writer = SummaryWriter(outdir)
+
     for epoch in range(1, num_epochs + 1):
-        train_loss = train_epoch(model, dataloader, optimizer, loss_fn, device)
+        train_loss = train_epoch(model, train_dataloader, optimizer, loss_fn, device, writer)
+        val_loss = val_epoch(model, val_dataloader, loss_fn, device, writer)
+        torch.save(model.state_dict(), os.path.join(outdir, f"{str(epoch).zfill(3)}-epoch.pth"))
 
-        # val_loss = val_epoch(model, dataloader, loss_fn, device)
-
-
+    torch.save(model.state_dict(), os.path.join(outdir, "final.pth"))
 
 
 
