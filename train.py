@@ -41,7 +41,7 @@ def train_epoch(model, dataloader, optimizer, loss_fn, device, writer, epoch):
         train_loss += loss.item()
 
         iteration = (epoch * size + (i + 1))
-        if iteration % 100 == 0:
+        if iteration % 100 == 0 and i > 0:
             print(f"Iteration {iteration} - Train Loss: {train_loss / i}")
             writer.add_scalar('Loss/train', train_loss/i, iteration)
 
@@ -66,7 +66,7 @@ def val_epoch(model, dataloader, loss_fn, device, writer, epoch):
 
         val_loss += loss.item()
         iteration = (epoch * size + (i + 1))
-        if iteration % 100 == 0:
+        if iteration % 20 == 0 and i > 0:
             print(f"Iteration {iteration} - Val Loss: {val_loss / i}")
             writer.add_scalar('Loss/val', val_loss/i, iteration)
 
