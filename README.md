@@ -16,13 +16,13 @@ First I will try to implement the following [paper](https://arxiv.org/pdf/2111.0
 Down below you can see a few example predictions of the current model, trained without any augmentations for only 5 epochs. Already looks promising, the model seems to work.
 
 <p align="center">
-<img src="assets/example-0.jpg" width="80%">
+<img src="assets/example-0.jpg" width="100%">
 </p>
 
 <p align="center">
-<img src="assets/example-1.jpg" width="80%">
+<img src="assets/example-1.jpg" width="100%">
 </p>
 
 <p align="center">
-<img src="assets/example-2.jpg" width="80%">
+<img src="assets/example-2.jpg" width="100%">
 </p>
