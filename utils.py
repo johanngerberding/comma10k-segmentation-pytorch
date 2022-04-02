@@ -1,3 +1,4 @@
+import os 
 import cv2
 import torch 
 import numpy as np 
@@ -22,19 +23,15 @@ def predict(model, img_path, transforms, device):
 def plot_segmentation(
     model, 
     img_path, 
-    classes,
+    colors,
     transforms, 
     device, 
-    figsize=(16,9),
+    outname,
+    figsize=(12,5),
     img_weight=0.5,
 ):
     pred = predict(model, img_path, transforms, device)
     classMap = np.argmax(pred, axis=0)
-    
-    # pick some random colors
-    np.random.seed(42)
-    colors = np.random.randint(0, 255, size=(len(classes) - 1, 3), dtype="uint8")
-    colors = np.vstack([[0, 0, 0], colors]).astype("uint8")
     
     colored_mask = colors[classMap]
     
@@ -52,3 +49,49 @@ def plot_segmentation(
     plt.figure(figsize=figsize)
     plt.axis("off")
     plt.imshow(output)
+    plt.savefig(outname)
+    
+    
+def plot_pred2tgt(
+    model, 
+    img_path, 
+    colors,
+    transforms, 
+    device,
+    masks_folder,
+    outname,
+    figsize=(12,7),
+    img_weight=0.5,
+):
+    _, filename = os.path.split(img_path)
+    mask_path = os.path.join(masks_folder, filename)
+    
+    pred = predict(model, img_path, transforms, device)
+    classMap = np.argmax(pred, axis=0)
+    
+    colored_mask = colors[classMap]
+    
+    image = cv2.imread(img_path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    tgt_mask = cv2.imread(mask_path)
+    tgt_mask = cv2.cvtColor(tgt_mask, cv2.COLOR_BGR2RGB)
+    
+    colored_mask = cv2.resize(
+        colored_mask, 
+        (image.shape[1], image.shape[0]), 
+        interpolation=cv2.INTER_NEAREST,
+    )
+    
+    output = ((img_weight * image) + ((1. - img_weight) * colored_mask)).astype("uint8")
+    
+    fig, axs = plt.subplots(1, 2, figsize=figsize)
+   
+    axs[0].imshow(output)
+    axs[0].set_title('Prediction')
+    axs[0].axis('off')
+    axs[1].imshow(tgt_mask)
+    axs[1].set_title('Groundtruth')
+    axs[1].axis('off')
+    plt.tight_layout()
+    fig.savefig(outname)
