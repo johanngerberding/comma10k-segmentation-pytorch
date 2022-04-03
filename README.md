@@ -13,7 +13,7 @@ First I will try to implement the following [paper](https://arxiv.org/pdf/2111.0
 
 ## Predictions
 
-Down below you can see a few example predictions of the current model, trained without any augmentations for only 5 epochs. Already looks promising, the model seems to work.
+Down below you can see a few example predictions of the current model, trained for 50 epochs (looks much worse than the model trained before without any augmentation but the metrics look quite good, I still have to find the problem).
 
 <p align="center">
 <img src="assets/example-0.jpg" width="100%">

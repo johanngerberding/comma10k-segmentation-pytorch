@@ -7,6 +7,7 @@ import shutil
 from datetime import date
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+import segmentation_models_pytorch as smp 
 
 from dataset import (Comma10kDataset,
                      train_test_split,
@@ -17,12 +18,35 @@ from model import RegSeg
 from config import get_cfg_defaults
 from evaluate import IoU
 
+def evaluate(preds, tgts, threshold=0.5):
+    tp, fp, fn, tn = smp.metrics.get_stats(
+        preds, tgts, mode='multilabel', threshold=threshold)
+    iou_score = smp.metrics.iou_score(
+        tp, fp, fn, tn, reduction="micro")
+    f1_score = smp.metrics.f1_score(
+        tp, fp, fn, tn, reduction="micro")
+    accuracy = smp.metrics.accuracy(
+        tp, fp, fn, tn, reduction="macro")
+    recall = smp.metrics.recall(
+        tp, fp, fn, tn, reduction="micro-imagewise")
+    
+    return iou_score, f1_score, accuracy, recall
+    
 
-def train_epoch(model, dataloader, optimizer, loss_fn, device, writer, epoch, cfg):
+
+def train_epoch(
+    model, 
+    dataloader, 
+    optimizer, 
+    loss_fn, 
+    device, 
+    writer, 
+    epoch, 
+    cfg, 
+    stats,
+):
     model.train()
     train_loss = 0
-    ious = []
-
     size = len(dataloader.dataset)
 
     if epoch > 0:
@@ -45,29 +69,67 @@ def train_epoch(model, dataloader, optimizer, loss_fn, device, writer, epoch, cf
 
         train_loss += loss.item()
 
-        pred = pred.detach().cpu().numpy()
-        mask = mask.detach().cpu().numpy()
+        pred = pred.detach().cpu()
+        mask = mask.detach().cpu()
 
-        iou = IoU(pred, mask)
-        ious.append(iou)
-
+        iou_score, f1_score, accuracy, recall = evaluate(pred, mask)
+        
         iteration += 1
+        
+        stats["train"]["loss"][iteration] = loss.item()
+        stats["train"]["iou_score"][iteration] = iou_score.item()
+        stats["train"]["f1_score"][iteration] = f1_score.item()
+        stats["train"]["accuracy"][iteration] = accuracy.item()
+        stats["train"]["recall"][iteration] = recall.item()
+        
         if iteration % 20 == 0 and i > 0:
-            print(f"Iteration {iteration} - Train Loss: {train_loss / i} - Mean IoU: {sum(ious) / i}")
+            print(f"Iteration {iteration} - Train Loss: {train_loss / i}")
             writer.add_scalar('Loss/train', train_loss/i, iteration)
+            last_20_iters = [i for i in range(iteration - 20 + 1, iteration + 1)]
+            # Mean Values of metrics from the last 20 iterations
+            writer.add_scalar(
+                'IoU/train', 
+                sum([stats["train"]["iou_score"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
+            writer.add_scalar(
+                'F1_score/train', 
+                sum([stats["train"]["f1_score"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
+            writer.add_scalar(
+                'Accuracy/train', 
+                sum([stats["train"]["accuracy"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
+            writer.add_scalar(
+                'Recall/train', 
+                sum([stats["train"]["recall"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
 
 
     train_loss /= i
 
-    miou = sum(ious) / i
-
-    return train_loss, miou
+    return stats
 
 
-def val_epoch(model, dataloader, loss_fn, device, writer, epoch, cfg):
+def val_epoch(
+    model, 
+    dataloader, 
+    loss_fn, 
+    device, 
+    writer, 
+    epoch, 
+    cfg, 
+    stats,
+):
     model.eval()
     val_loss = 0
-    ious = []
 
     size = len(dataloader.dataset)
 
@@ -85,24 +147,56 @@ def val_epoch(model, dataloader, loss_fn, device, writer, epoch, cfg):
 
         loss = loss_fn(pred, torch.argmax(mask, axis=1))
 
-        pred = pred.detach().cpu().numpy()
-        mask = mask.detach().cpu().numpy()
+        pred = pred.detach().cpu()
+        mask = mask.detach().cpu()
 
-        iou = IoU(pred, mask)
-        ious.append(iou)
+        iou_score, f1_score, accuracy, recall = evaluate(pred, mask)
 
         val_loss += loss.item()
         iteration += 1
+        
+        stats["val"]["loss"][iteration] = loss.item()
+        stats["val"]["iou_score"][iteration] = iou_score.item()
+        stats["val"]["f1_score"][iteration] = f1_score.item()
+        stats["val"]["accuracy"][iteration] = accuracy.item()
+        stats["val"]["recall"][iteration] = recall.item()
+        
+        
         if iteration % 20 == 0 and i > 0:
-            print(f"Iteration {iteration} - Val Loss: {val_loss / i} - Mean IoU: {sum(ious) / i}")
+            print(f"Iteration {iteration} - Val Loss: {val_loss / i}")
             writer.add_scalar('Loss/val', val_loss/i, iteration)
+    
+            last_20_iters = [i for i in range(iteration - 20 + 1, iteration + 1)]
+            # Mean Values of metrics from the last 20 iterations
+            writer.add_scalar(
+                'IoU/val', 
+                sum([stats["val"]["iou_score"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
+            writer.add_scalar(
+                'F1_score/val', 
+                sum([stats["val"]["f1_score"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
+            writer.add_scalar(
+                'Accuracy/val', 
+                sum([stats["val"]["accuracy"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
+            writer.add_scalar(
+                'Recall/val', 
+                sum([stats["val"]["recall"][it] 
+                     for it in last_20_iters]) / 20,
+                iteration,
+            )
 
 
     val_loss /= i
 
-    miou = sum(ious) / i
-
-    return val_loss, miou
+    return stats, val_loss
 
 
 
@@ -164,17 +258,19 @@ def main():
         train_dataset,
         batch_size=cfg.TRAIN.BATCH_SIZE,
         shuffle=True,
+        num_workers=cfg.SYSTEM.NUM_WORKERS,
     )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=cfg.VAL.BATCH_SIZE,
+        num_workers=cfg.SYSTEM.NUM_WORKERS,
     )
 
-    loss_fn = torch.nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(
+    #loss_fn = torch.nn.CrossEntropyLoss().to(device)
+    loss_fn = smp.losses.soft_ce.SoftCrossEntropyLoss(smooth_factor=0.15).to(device)
+    optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg.TRAIN.BASE_LR,
-        momentum=cfg.TRAIN.MOMENTUM,
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -182,16 +278,26 @@ def main():
         factor=0.1,
         patience=5,
         threshold=0.0001,
-        min_lr=0.0000001,
+        min_lr=0.00000001,
     )
 
     writer = SummaryWriter(outdir)
 
-    train_stats = {
-        "train_loss": [],
-        "train_miou": [],
-        "val_loss": [],
-        "val_miou": [],
+    stats = {
+        "train": {
+            "loss": {},
+            "iou_score": {},
+            "f1_score": {},
+            "accuracy": {},
+            "recall": {},
+        },
+        "val": {
+            "loss": {},
+            "iou_score": {},
+            "f1_score": {},
+            "accuracy": {},
+            "recall": {},
+        },
     }
 
     best_val_loss = 10000
@@ -199,7 +305,8 @@ def main():
 
     print(f"Start training for {cfg.TRAIN.NUM_EPOCHS} epochs!")
     for epoch in range(cfg.TRAIN.NUM_EPOCHS):
-        train_loss = train_epoch(
+        print(f"=============== Epoch {epoch+1} ===============")
+        stats = train_epoch(
             model,
             train_dataloader,
             optimizer,
@@ -208,8 +315,10 @@ def main():
             writer,
             epoch,
             cfg,
+            stats,
+            
         )
-        val_loss, miou = val_epoch(
+        stats, val_loss = val_epoch(
             model,
             val_dataloader,
             loss_fn,
@@ -217,13 +326,10 @@ def main():
             writer,
             epoch,
             cfg,
+            stats,
         )
 
         scheduler.step(val_loss)
-
-        train_stats["train_loss"].append(train_loss)
-        train_stats["val_loss"].append(val_loss)
-        train_stats["val_miou"].append(miou)
 
         if val_loss < best_val_loss:
             torch.save(model.state_dict(), os.path.join(weights_dir, "best.pth"))
@@ -235,7 +341,7 @@ def main():
     print(f"Best model from epoch {best_epoch}.")
 
     with open(os.path.join(outdir, "train_stats.json"), 'w') as fp:
-        json.dump(train_stats, fp, indent=4)
+        json.dump(stats, fp, indent=4)
 
 
 if __name__ == "__main__":

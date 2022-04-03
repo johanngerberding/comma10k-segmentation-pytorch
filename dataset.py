@@ -10,30 +10,23 @@ from albumentations.pytorch import ToTensorV2
 
 def get_train_transforms(cfg):
     return A.Compose([
-        A.Resize(
-            height=cfg.DATASET.IMG_HEIGHT, 
-            width=cfg.DATASET.IMG_WIDTH,
-        ),
         A.HorizontalFlip(p=0.5),
         A.RGBShift(
-            r_shift_limit=25, 
-            g_shift_limit=25, 
-            b_shift_limit=25, 
-            p=0.5,
+            r_shift_limit=20, 
+            g_shift_limit=20, 
+            b_shift_limit=20, 
+            p=0.2,
         ),
-        A.RandomBrightnessContrast(
+        A.OneOf([
+            A.RandomBrightnessContrast(
             brightness_limit=0.4, 
             contrast_limit=0.4, 
-            p=0.5,
-        ),
-        A.ShiftScaleRotate(
-            shift_limit=0.1, 
-            scale_limit=0.05, 
-            rotate_limit=15, 
-            p=0.5,
-        ),
+            p=1.0,
+            ),
+            A.CLAHE(clip_limit=4.0, p=1.0),
+        ], p=0.5),
+        
         A.Blur(blur_limit=7, p=0.5),
-        A.CLAHE(clip_limit=4.0, p=0.5),
         A.ColorJitter(
             brightness=0.2, 
             contrast=0.2, 
@@ -42,11 +35,16 @@ def get_train_transforms(cfg):
             p=0.5,
         ),
         A.OneOf([
-            A.RandomFog(p=0.15),
-            A.RandomRain(p=0.4),
-            A.RandomSnow(p=0.25),
-            A.RandomSunFlare(p=0.2),
-        ], p=0.5),
+            A.RandomFog(p=1.0),
+            A.RandomRain(p=1.0),
+            A.RandomSnow(p=1.0),
+            A.RandomSunFlare(p=1.0),
+        ], p=0.4),
+        A.Resize(
+            height=cfg.DATASET.IMG_HEIGHT, 
+            width=cfg.DATASET.IMG_WIDTH,
+            p=1.0
+        ),
         A.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225],
