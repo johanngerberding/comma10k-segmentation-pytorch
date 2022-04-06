@@ -16,7 +16,7 @@ from dataset import (Comma10kDataset,
 
 from model import RegSeg
 from config import get_cfg_defaults
-from evaluate import IoU
+
 
 def evaluate(preds, tgts, threshold=0.5):
     tp, fp, fn, tn = smp.metrics.get_stats(
@@ -243,7 +243,7 @@ def main():
         masks_root,
         train_imgs,
         classes=cfg.DATASET.CLASSES,
-        transforms=get_train_transforms(cfg),
+        transforms=get_test_transforms(cfg),
     )
 
     val_dataset = Comma10kDataset(
