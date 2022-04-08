@@ -8,12 +8,12 @@ First I will try to implement the following [paper](https://arxiv.org/pdf/2111.0
 
 * mixed precision training
 * evaluation (pixel accuracy, IoU, F1 Score)
-* more augmentations
-* visualization methods
+* more augmentations (including augs makes the results worse, there is a bug somewhere)
+* ~~visualization methods~~
 
 ## Predictions
 
-Down below you can see a few example predictions of the current model, trained for 50 epochs (looks much worse than the model trained before without any augmentation but the metrics look quite good, I still have to find the problem).
+Down below you can see a few example predictions of the current model, trained for 50 epochs without any augmentations. Results look pretty good, but something is broken with the mask augmentation in albumentations, working on it.
 
 <p align="center">
 <img src="assets/example-0.jpg" width="100%">
