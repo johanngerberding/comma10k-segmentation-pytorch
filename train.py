@@ -1,9 +1,12 @@
 import os
 import math
+import glob 
+import random
 import json
 import torch
 import torch.nn as nn
 import shutil
+from PIL import ImageColor
 from datetime import date
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -16,6 +19,39 @@ from dataset import (Comma10kDataset,
 
 from model import RegSeg
 from config import get_cfg_defaults
+from utils import plot_pred2tgt
+
+
+
+def plot_samples(
+    model, 
+    cfg, 
+    transforms, 
+    device, 
+    out_dir, 
+    imgs_folder, 
+    masks_folder, 
+    num_samples=5,
+):
+    "Plot some prediction samples"
+    colors = cfg.DATASET.CHANNEL2COLOR
+    rgb_colors = [list(ImageColor.getcolor(color, "RGB")) 
+                   for color in colors]
+    
+    imgs = glob.glob(imgs_folder + "/*.png")
+    samples = random.sample(imgs, num_samples)
+    
+    for sample in samples:
+        _, filename = os.path.split(sample)
+        filename = os.path.join(out_dir, filename)
+        plot_pred2tgt(
+            model, 
+            sample, 
+            rgb_colors, 
+            transforms, 
+            device, 
+            masks_folder,
+            outname=filename)
 
 
 def evaluate(preds, tgts, threshold=0.5):
@@ -215,6 +251,9 @@ def main():
 
     weights_dir = os.path.join(outdir, "weights")
     os.makedirs(weights_dir, exist_ok=False)
+    
+    test_imgs_dir = os.path.join(outdir, "preds")
+    os.makedirs(test_imgs_dir)
 
     with open(os.path.join(outdir, "config.yaml"), 'w') as fp:
         fp.write(cfg.dump())
@@ -242,15 +281,15 @@ def main():
         imgs_root,
         masks_root,
         train_imgs,
-        classes=cfg.DATASET.CLASSES,
-        transforms=get_test_transforms(cfg),
+        cfg,
+        transforms=get_train_transforms(cfg),
     )
 
     val_dataset = Comma10kDataset(
         imgs_root,
         masks_root,
         val_imgs,
-        classes=cfg.DATASET.CLASSES,
+        cfg,
         transforms=get_test_transforms(cfg),
     )
 
@@ -305,6 +344,7 @@ def main():
 
     print(f"Start training for {cfg.TRAIN.NUM_EPOCHS} epochs!")
     for epoch in range(cfg.TRAIN.NUM_EPOCHS):
+        
         print(f"=============== Epoch {epoch+1} ===============")
         stats = train_epoch(
             model,
@@ -328,7 +368,11 @@ def main():
             cfg,
             stats,
         )
-
+        
+        test_preds_dir = os.path.join(test_imgs_dir, "epoch-{}".format(str(epoch+1).zfill(3)))
+        os.makedirs(test_preds_dir)
+        plot_samples(model, cfg, get_test_transforms(cfg), 
+                     device, test_preds_dir, imgs_root, masks_root)
         scheduler.step(val_loss)
 
         if val_loss < best_val_loss:

@@ -47,7 +47,7 @@ def plot_segmentation(
 ):
     pred = predict(model, img_path, transforms, device)
     classMap = np.argmax(pred, axis=0)
-
+    colors = np.array(colors).astype("uint8")
     colored_mask = colors[classMap]
 
     image = cv2.imread(img_path)
@@ -83,7 +83,8 @@ def plot_pred2tgt(
 
     pred = predict(model, img_path, transforms, device)
     classMap = np.argmax(pred, axis=0)
-
+    
+    colors = np.array(colors).astype("uint8")
     colored_mask = colors[classMap]
 
     image = cv2.imread(img_path)

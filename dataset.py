@@ -2,6 +2,7 @@ import os
 import glob
 import cv2
 import random
+import numpy as np 
 import torch
 from torch.utils.data import Dataset
 import albumentations as A
@@ -43,7 +44,6 @@ def get_train_transforms(cfg):
         A.Resize(
             height=cfg.DATASET.IMG_HEIGHT, 
             width=cfg.DATASET.IMG_WIDTH,
-            p=1.0
         ),
         A.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -65,6 +65,30 @@ def get_test_transforms(cfg):
         ),
         ToTensorV2(),
     ])
+    
+
+def preprocess_fn(cfg, img, masks):
+    print(img.shape)
+    img = cv2.resize(
+        img, 
+        (cfg.DATASET.IMG_WIDTH, cfg.DATASET.IMG_HEIGHT), 
+        interpolation=cv2.INTER_NEAREST,
+    )
+    img = img / 255.
+    img = torch.tensor(img)
+    print("Resized image")
+    res_masks = []
+    for mask in masks:
+        mask = np.expand_dims(mask, axis=2)
+        nmask = cv2.resize(
+            mask, 
+            (cfg.DATASET.IMG_WIDTH, cfg.DATASET.IMG_HEIGHT), 
+            interpolation=cv2.INTER_NEAREST,
+        )
+        res_masks.append(nmask)
+    print("Resized masks")
+    return img, res_masks
+
 
 
 def train_test_split(imgs_root: str, split: float = 0.9):
@@ -79,12 +103,18 @@ def train_test_split(imgs_root: str, split: float = 0.9):
 
 
 class Comma10kDataset(Dataset):
-    def __init__(self, imgs_root: str, masks_root: str, imgs: list, classes: int, transforms):
+    def __init__(
+        self, 
+        imgs_root: str, 
+        masks_root: str, 
+        imgs: list, 
+        cfg,
+        transforms):
         super(Comma10kDataset, self).__init__()
         self.imgs_root = imgs_root
         self.masks_root = masks_root
         self.imgs = imgs
-        self.classes = classes
+        self.classes = cfg.DATASET.CLASSES
         self.transforms = transforms
 
 
@@ -97,16 +127,17 @@ class Comma10kDataset(Dataset):
         image = cv2.imread(img)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask = cv2.imread(mask, 0).astype("uint8")
-
+        masks = [(mask == v).astype(int) for v in self.classes]
+        
         if self.transforms:
             transformed = self.transforms(
-                image=image, mask=mask)
+                image=image, masks=masks)
 
             transformed_image = transformed['image']
-            transformed_mask = transformed['mask']
+            transformed_masks = transformed['masks']
 
-
-        mask = torch.stack([(transformed_mask == v) for v in self.classes], axis=0).float()
+        mask = np.stack(transformed_masks, axis=0)
+        mask = torch.tensor(mask).float()
 
         return transformed_image, mask
 

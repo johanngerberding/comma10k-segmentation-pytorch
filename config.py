@@ -13,7 +13,7 @@ _C.SYSTEM.NUM_WORKERS = 6
 _C.TRAIN = CN()
 _C.TRAIN.BASE_LR = 0.0003
 _C.TRAIN.MOMENTUM = 0.9
-_C.TRAIN.BATCH_SIZE = 96
+_C.TRAIN.BATCH_SIZE = 64
 _C.TRAIN.NUM_EPOCHS = 50
 
 _C.VAL = CN()
@@ -25,6 +25,8 @@ _C.DATASET.IMG_WIDTH = 18*32
 _C.DATASET.IMG_HEIGHT = 14*32
 _C.DATASET.ROOT = "/home/johann/sonstiges/comma10k-segmenation-pytorch/comma10k"
 _C.DATASET.SPLIT = 0.9
+_C.DATASET.CHANNEL2CLASS = ["road", "lane markings", "my car", "undrivable", "movable"]
+_C.DATASET.CHANNEL2COLOR = ["#402020", "#ff0000", "#cc00ff", "#808060", "#00ff66"]
 
 
 def get_cfg_defaults():
