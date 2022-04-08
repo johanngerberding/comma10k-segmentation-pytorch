@@ -65,6 +65,7 @@ def plot_segmentation(
     plt.axis("off")
     plt.imshow(output)
     plt.savefig(outname)
+    plt.close('all')
 
 
 def plot_pred2tgt(
@@ -75,7 +76,7 @@ def plot_pred2tgt(
     device,
     masks_folder,
     outname,
-    figsize=(12,7),
+    figsize=(12,5),
     img_weight=0.5,
 ):
     _, filename = os.path.split(img_path)
@@ -111,3 +112,4 @@ def plot_pred2tgt(
     axs[1].axis('off')
     plt.tight_layout()
     fig.savefig(outname)
+    plt.close('all')

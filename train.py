@@ -291,6 +291,7 @@ def main():
         val_imgs,
         cfg,
         transforms=get_test_transforms(cfg),
+        train=False,
     )
 
     train_dataloader = DataLoader(
