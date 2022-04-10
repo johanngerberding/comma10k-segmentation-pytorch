@@ -58,14 +58,11 @@ def transforms_img():
     ])
 
 
-def train_test_split(imgs_root: str, split: float = 0.9):
+def train_test_split(imgs_root: str):
     "Create lists with train/test image paths"
     img_paths = glob.glob(imgs_root + "/*.png")
-    random.shuffle(img_paths)
-    train_split = int(len(img_paths) * split)
-    train = img_paths[:train_split]
-    test = img_paths[train_split:]
-
+    train = [img for img in img_paths if not img.endswith('9.png')]
+    test = [img for img in img_paths if img.endswith('9.png')]
     return train, test
 
 
