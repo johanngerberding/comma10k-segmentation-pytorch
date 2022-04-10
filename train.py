@@ -75,6 +75,7 @@ def train_epoch(
     dataloader,
     optimizer,
     loss_fn,
+    scaler,
     device,
     writer,
     epoch,
@@ -96,12 +97,13 @@ def train_epoch(
 
         optimizer.zero_grad()
 
-        pred = model(img)
-
-        loss = loss_fn(pred, torch.argmax(mask, axis=1))
-        loss.backward()
-
-        optimizer.step()
+        with torch.cuda.amp.autocast():
+            pred = model(img)
+            loss = loss_fn(pred, torch.argmax(mask, axis=1))
+        
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
         train_loss += loss.item()
 
@@ -178,10 +180,11 @@ def val_epoch(
         img = img.to(device)
         mask = mask.to(device).long()
 
-        with torch.no_grad():
-            pred = model(img)
+        with torch.cuda.amp.autocast():
+            with torch.no_grad():
+                pred = model(img)
 
-        loss = loss_fn(pred, torch.argmax(mask, axis=1))
+            loss = loss_fn(pred, torch.argmax(mask, axis=1))
 
         pred = pred.detach().cpu()
         mask = mask.detach().cpu()
@@ -343,6 +346,9 @@ def main():
         model.parameters(),
         lr=cfg.TRAIN.BASE_LR,
     )
+    
+    scaler = torch.cuda.amp.GradScaler()
+    
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         'min',
@@ -383,6 +389,7 @@ def main():
             train_dataloader,
             optimizer,
             loss_fn,
+            scaler,
             device,
             writer,
             epoch,
