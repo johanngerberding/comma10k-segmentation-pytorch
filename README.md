@@ -7,6 +7,20 @@ First I will try to implement the following [paper](https://arxiv.org/pdf/2111.0
 Moreover I will compare it to some of the older approaches like [UNet](https://arxiv.org/abs/1505.04597) or [DeepLabV3](https://arxiv.org/abs/1706.05587) using the [PyTorch Segmentation Models](https://github.com/qubvel/segmentation_models.pytorch) framework.
 
 
+## Training
+
+If you want to train your own models, please create a virtual environment. I used PyTorch 1.8.1 (torchvision 0.9.1, cuda-toolkit 11.1) which you should install first, before installing everything from `requirements.txt`. The `config.py` contains all hyperparameter settings for the training run, you can change the values if you want to. 
+
+´´´
+python -m venv .env
+source .env/bin/activate
+pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+git clone https://github.com/johanngerberding/comma10k-segmentation-pytorch.git
+cd comma10k-segmentation-pytorch
+pip install -r requirements.txt
+python train.py
+´´´
+
 ## RegSeg
 
 Down below you can see a few example predictions of the current RegSeg model, trained for 50 epochs without any augmentations. Results look pretty good.
