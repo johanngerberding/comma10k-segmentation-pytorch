@@ -11,7 +11,7 @@ Moreover I will compare it to some of the older approaches like [UNet](https://a
 
 If you want to train your own models, please create a virtual environment. I used PyTorch 1.8.1 (torchvision 0.9.1, cuda-toolkit 11.1) which you should install first, before installing everything from `requirements.txt`. The `config.py` contains all hyperparameter settings for the training run, you can change the values if you want to. 
 
-´´´
+```
 python -m venv .env
 source .env/bin/activate
 pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
@@ -19,7 +19,7 @@ git clone https://github.com/johanngerberding/comma10k-segmentation-pytorch.git
 cd comma10k-segmentation-pytorch
 pip install -r requirements.txt
 python train.py
-´´´
+```
 
 ## RegSeg
 
