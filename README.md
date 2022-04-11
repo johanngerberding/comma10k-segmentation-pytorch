@@ -27,11 +27,11 @@ Here we have two random prediction samples from the DeepLabV3+ model after 20 ep
 ### Predictions
 
 <p align="center">
-<img src="assets/deeplab-example-0.jpg" width="90%">
+<img src="assets/deeplab-example-0.png" width="90%">
 </p>
 
 <p align="center">
-<img src="assets/deeplab-example-1.jpg" width="90%">
+<img src="assets/deeplab-example-1.png" width="90%">
 </p>
 
 
