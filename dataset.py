@@ -46,7 +46,7 @@ def transforms_img():
             A.RandomSunFlare(p=1.0),
             A.RandomShadow(p=1.0),
             A.RandomFog(p=1.0),
-        ], p=0.3),
+        ], p=0.4),
         A.OneOf([
             A.GaussianBlur(p=1.0),
             A.MotionBlur(p=1.0)
@@ -55,6 +55,10 @@ def transforms_img():
             A.CLAHE(p=1.0),
             A.ColorJitter(p=1.0)
         ], p=0.4),
+        A.OneOf([
+            A.RandomContrast(p=1.0),
+            A.HueSaturationValue(p=1.0),
+        ],p=0.5),
     ])
 
 

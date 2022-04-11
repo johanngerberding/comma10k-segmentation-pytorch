@@ -137,7 +137,6 @@ def plot_stats(
     figsize: tuple = (25,5), 
     smooth: int = 50
 ):
-    assert os.path.isfile(file_path)
     with open(file_path, 'r') as fp:
         stats = json.load(fp)
         
@@ -171,23 +170,3 @@ def plot_stats(
     axs[4].set_xlabel('Iterations')
     plt.tight_layout()
     fig.savefig(outname)
-
-
-def main():
-    exp_dir = "/home/johann/sonstiges/comma10k-segmenation-pytorch/exps/2022-04-08"
-    stats = os.path.join(exp_dir, "train_stats.json")
-    
-    plot_stats(
-        stats, 
-        os.path.join(exp_dir, 'train_stats.jpg'), 
-        'train',
-    ) 
-    plot_stats(
-        stats, 
-        os.path.join(exp_dir, 'val_stats.jpg'), 
-        'val',
-    )
-    
-    
-if __name__ == "__main__":
-    main()

@@ -7,26 +7,38 @@ First I will try to implement the following [paper](https://arxiv.org/pdf/2111.0
 Moreover I will compare it to some of the older approaches like [UNet](https://arxiv.org/abs/1505.04597) or [DeepLabV3](https://arxiv.org/abs/1706.05587) using the [PyTorch Segmentation Models](https://github.com/qubvel/segmentation_models.pytorch) framework.
 
 
-## RegSeg - Predictions
+## RegSeg
 
 Down below you can see a few example predictions of the current RegSeg model, trained for 50 epochs without any augmentations. Results look pretty good.
 
 <p align="center">
-<img src="assets/example-0.jpg" width="100%">
+<img src="assets/regseg-example-0.jpg" width="90%">
 </p>
 
 <p align="center">
-<img src="assets/example-1.jpg" width="100%">
+<img src="assets/regseg-example-1.jpg" width="90%">
+</p>
+
+
+## DeepLabV3+ 
+
+Here we have two random prediction samples from the DeepLabV3+ model after 20 epochs.
+
+### Predictions
+
+<p align="center">
+<img src="assets/deeplab-example-0.jpg" width="90%">
 </p>
 
 <p align="center">
-<img src="assets/example-2.jpg" width="100%">
+<img src="assets/deeplab-example-1.jpg" width="90%">
 </p>
 
 
 ## TODOs
 
-* mixed precision training
+* ~~mixed precision training~~
 * ~~evaluation (pixel accuracy, IoU, F1 Score)~~
 * more augmentations
 * ~~visualization methods~~
+* add plots of training stats

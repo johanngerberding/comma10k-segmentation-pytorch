@@ -421,17 +421,19 @@ def main():
     torch.save(model.state_dict(), os.path.join(weights_dir, "final.pth"))
 
     print(f"Best model from epoch {best_epoch}.")
+    
+    stats_path = os.path.join(outdir, "train_stats.json")
 
-    with open(os.path.join(outdir, "train_stats.json"), 'w') as fp:
+    with open(stats_path, 'w') as fp:
         json.dump(stats, fp, indent=4)
         
     plot_stats(
-        stats, 
+        stats_path, 
         os.path.join(outdir, 'train_stats.jpg'), 
         'train',
     ) 
     plot_stats(
-        stats, 
+        stats_path, 
         os.path.join(outdir, 'val_stats.jpg'), 
         'val',
     )
