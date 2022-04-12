@@ -2,8 +2,12 @@ import os
 import cv2
 import json 
 import torch
+import glob 
+import random 
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import ImageColor
+import segmentation_models_pytorch as smp
 
 
 def load_train_test(exp_root):
@@ -170,3 +174,50 @@ def plot_stats(
     axs[4].set_xlabel('Iterations')
     plt.tight_layout()
     fig.savefig(outname)
+
+
+
+def plot_samples(
+    model,
+    cfg,
+    transforms,
+    device,
+    out_dir,
+    imgs_folder,
+    masks_folder,
+    num_samples=5,
+):
+    "Plot some prediction samples"
+    colors = cfg.DATASET.CHANNEL2COLOR
+    rgb_colors = [list(ImageColor.getcolor(color, "RGB"))
+                   for color in colors]
+
+    imgs = glob.glob(imgs_folder + "/*.png")
+    samples = random.sample(imgs, num_samples)
+
+    for sample in samples:
+        _, filename = os.path.split(sample)
+        filename = os.path.join(out_dir, filename)
+        plot_pred2tgt(
+            model,
+            sample,
+            rgb_colors,
+            transforms,
+            device,
+            masks_folder,
+            outname=filename)
+
+
+def evaluate(preds, tgts, threshold=0.5):
+    tp, fp, fn, tn = smp.metrics.get_stats(
+        preds, tgts, mode='multilabel', threshold=threshold)
+    iou_score = smp.metrics.iou_score(
+        tp, fp, fn, tn, reduction="micro")
+    f1_score = smp.metrics.f1_score(
+        tp, fp, fn, tn, reduction="micro")
+    accuracy = smp.metrics.accuracy(
+        tp, fp, fn, tn, reduction="macro")
+    recall = smp.metrics.recall(
+        tp, fp, fn, tn, reduction="micro-imagewise")
+
+    return iou_score, f1_score, accuracy, recall

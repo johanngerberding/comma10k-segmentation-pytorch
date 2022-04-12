@@ -48,6 +48,15 @@ Here we have two random prediction samples from the DeepLabV3+ model after 20 ep
 <img src="assets/deeplab-example-1.png" width="90%">
 </p>
 
+### Stats
+
+<p align="center">
+<img src="assets/deeplab-train-stats.jpg" width="100%">
+</p>
+
+<p align="center">
+<img src="assets/deeplab-val-stats.jpg" width="100%">
+</p>
 
 ## TODOs
 
@@ -55,4 +64,4 @@ Here we have two random prediction samples from the DeepLabV3+ model after 20 ep
 * ~~evaluation (pixel accuracy, IoU, F1 Score)~~
 * more augmentations
 * ~~visualization methods~~
-* add plots of training stats
+* ~~add plots of training stats~~
