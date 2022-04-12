@@ -176,6 +176,34 @@ def plot_stats(
     fig.savefig(outname)
 
 
+def plot_losses(
+    file_path: str, 
+    outname: str, 
+    figsize: tuple = (12,5), 
+    smooth: int = 50
+):
+    with open(file_path, 'r') as fp:
+        stats = json.load(fp)
+        
+    train_loss = [v for _, v in stats['train']['loss'].items()]
+    val_loss = [v for _, v in stats['val']['loss'].items()]
+    
+    sm_train_loss, train_steps = smoothing(train_loss, smooth)
+    sm_val_loss, val_steps = smoothing(val_loss, smooth)
+    
+    fig, axs = plt.subplots(1, 2, figsize=figsize)
+    axs[0].plot(train_steps, sm_train_loss)
+    axs[0].set_title('Train Loss')
+    axs[0].set_xlabel('Iterations')
+    
+    axs[1].plot(val_steps, sm_val_loss)
+    axs[1].set_title('Val Loss')
+    axs[1].set_xlabel('Iterations')
+    
+    plt.tight_layout()
+    fig.savefig(outname)
+
+
 
 def plot_samples(
     model,

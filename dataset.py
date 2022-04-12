@@ -56,7 +56,7 @@ def transforms_img():
             A.ColorJitter(p=1.0)
         ], p=0.4),
         A.OneOf([
-            A.RandomContrast(p=1.0),
+            A.RandomBrightnessContrast(p=1.0),
             A.HueSaturationValue(p=1.0),
         ],p=0.5),
     ])

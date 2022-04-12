@@ -17,7 +17,7 @@ from dataset import (Comma10kDataset,
 
 from models.regseg import RegSeg
 from config import get_cfg_defaults
-from utils import plot_stats, plot_samples, evaluate
+from utils import plot_losses, plot_stats, plot_samples, evaluate
 
 
 def train_epoch(
@@ -103,7 +103,7 @@ def train_epoch(
 
     train_loss /= i
 
-    return stats
+    return stats, train_loss
 
 
 def val_epoch(
@@ -326,6 +326,11 @@ def main():
             "recall": {},
         },
     }
+    
+    epoch_stats = {epoch: {
+        "train_loss": 0.0,
+        "val_loss": 0.0,
+        } for epoch in range(1, cfg.TRAIN.NUM_EPOCHS + 1)}
 
     best_val_loss = 10000
     best_epoch = 0
@@ -334,7 +339,7 @@ def main():
     for epoch in range(cfg.TRAIN.NUM_EPOCHS):
 
         print(f"=============== Epoch {epoch+1} ===============")
-        stats = train_epoch(
+        stats, train_loss = train_epoch(
             model,
             train_dataloader,
             optimizer,
@@ -346,6 +351,7 @@ def main():
             cfg,
             stats,
         )
+        epoch_stats[epoch+1]["train_loss"] = train_loss 
         stats, val_loss = val_epoch(
             model,
             val_dataloader,
@@ -356,6 +362,7 @@ def main():
             cfg,
             stats,
         )
+        epoch_stats[epoch+1]["val_loss"] = val_loss 
 
         test_preds_dir = os.path.join(test_imgs_dir, "epoch-{}".format(str(epoch+1).zfill(3)))
         os.makedirs(test_preds_dir)
@@ -387,6 +394,8 @@ def main():
         os.path.join(outdir, 'val_stats.jpg'), 
         'val',
     )
+    
+    plot_losses(stats_path, os.path.join(outdir, 'losses.jpg'))
 
 
 if __name__ == "__main__":

@@ -25,6 +25,8 @@ python train.py
 
 Down below you can see a few example predictions of the current RegSeg model, trained for 50 epochs without any augmentations. Results look pretty good.
 
+### Predictions
+
 <p align="center">
 <img src="assets/regseg-example-0.jpg" width="90%">
 </p>
@@ -33,10 +35,14 @@ Down below you can see a few example predictions of the current RegSeg model, tr
 <img src="assets/regseg-example-1.jpg" width="90%">
 </p>
 
+### Stats
+
+tbd
+
 
 ## DeepLabV3+ 
 
-Here we have two random prediction samples from the DeepLabV3+ model after 20 epochs.
+Here we have two random prediction samples from the DeepLabV3+ model after 50 epochs.
 
 ### Predictions
 
@@ -51,12 +57,9 @@ Here we have two random prediction samples from the DeepLabV3+ model after 20 ep
 ### Stats
 
 <p align="center">
-<img src="assets/deeplab-train-stats.jpg" width="100%">
+<img src="assets/deeplab-losses.jpg" width="85%">
 </p>
 
-<p align="center">
-<img src="assets/deeplab-val-stats.jpg" width="100%">
-</p>
 
 ## TODOs
 
