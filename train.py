@@ -212,6 +212,13 @@ def load_model(cfg, device) -> nn.Module:
             in_channels=3,
             classes=len(cfg.DATASET.CLASSES),
         )
+    elif cfg.MODEL.NAME == "unet++":
+        model = smp.UnetPlusPlus(
+            encoder_name=cfg.MODEL.BACKBONE,
+            encoder_weights="imagenet",
+            in_channels=3,
+            classes=len(cfg.DATASET.CLASSES),
+        )
     else:
         raise NotImplementedError
     

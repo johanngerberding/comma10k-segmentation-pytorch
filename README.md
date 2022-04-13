@@ -23,7 +23,7 @@ python train.py
 
 ## RegSeg
 
-Down below you can see a few example predictions of the current RegSeg model, trained for 50 epochs without any augmentations. Results look pretty good.
+Down below you can see a few example predictions of the current RegSeg model, trained for 100 epochs. If you want to try it, you can download the model and the config [here](https://drive.google.com/drive/folders/1zsuLSFO4rrOVALgy45rj8Utu_5p1v2qT?usp=sharing).
 
 ### Predictions
 
@@ -37,12 +37,15 @@ Down below you can see a few example predictions of the current RegSeg model, tr
 
 ### Stats
 
-tbd
+<p align="center">
+<img src="assets/regseg-losses.jpg" width="85%">
+</p>
 
 
 ## DeepLabV3+ 
 
-Here we have two random prediction samples from the DeepLabV3+ model after 50 epochs.
+Here we have two random prediction samples from the DeepLabV3+ model after 50 epochs. You can download the model and the config file [here](https://drive.google.com/drive/folders/1ojxByffe1dMgHlI2pLz6oowz7TCePtnn?usp=sharing).
+
 
 ### Predictions
 
@@ -68,3 +71,4 @@ Here we have two random prediction samples from the DeepLabV3+ model after 50 ep
 * more augmentations
 * ~~visualization methods~~
 * ~~add plots of training stats~~
+* Unet++ training

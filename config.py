@@ -1,9 +1,5 @@
 from yacs.config import CfgNode as CN
 
-# original img size
-# height 874
-# width 1164
-
 _C = CN()
 
 _C.SYSTEM = CN()
@@ -11,17 +7,17 @@ _C.SYSTEM.NUM_GPUS = 2
 _C.SYSTEM.NUM_WORKERS = 8
 
 _C.MODEL = CN()
-_C.MODEL.NAME = "regseg"
+_C.MODEL.NAME = "unet++"
 _C.MODEL.BACKBONE = "timm-efficientnet-b4"
 
 _C.TRAIN = CN()
 _C.TRAIN.BASE_LR = 0.003
 _C.TRAIN.MOMENTUM = 0.9
-_C.TRAIN.BATCH_SIZE = 32
-_C.TRAIN.NUM_EPOCHS = 100
+_C.TRAIN.BATCH_SIZE = 8
+_C.TRAIN.NUM_EPOCHS = 50
 
 _C.VAL = CN()
-_C.VAL.BATCH_SIZE = 16
+_C.VAL.BATCH_SIZE = 4
 
 _C.DATASET = CN()
 _C.DATASET.CLASSES = [41, 76, 90, 124, 161]
