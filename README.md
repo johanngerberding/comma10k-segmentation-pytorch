@@ -28,11 +28,11 @@ Down below you can see a few example predictions of the current RegSeg model, tr
 ### Predictions
 
 <p align="center">
-<img src="assets/regseg-example-0.jpg" width="90%">
+<img src="assets/regseg-example-0.png" width="90%">
 </p>
 
 <p align="center">
-<img src="assets/regseg-example-1.jpg" width="90%">
+<img src="assets/regseg-example-1.png" width="90%">
 </p>
 
 ### Stats
